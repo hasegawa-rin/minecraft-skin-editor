@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# Minecraft Bedrock スキンエディター
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+小学校低学年（1〜2年生）でも使える、Minecraft 統合版（Bedrock Edition）のスキンエディターです。
 
-Currently, two official plugins are available:
+ブラウザ上でスキンの各パーツを面ごとに編集し、3Dプレビューで確認しながら、PNGファイルとして書き出せます。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 主な機能
 
-## React Compiler
+- **スキン選択画面** — Steve / Alex など公式キャラクターをベースに編集を開始。手持ちのPNGファイルの読み込みにも対応
+- **2D 面分割エディター** — 頭・体・腕・脚の各面を拡大表示して1ドットずつ編集
+- **3D リアルタイムプレビュー** — 編集内容をリアルタイムに3Dモデルで確認。パーツ単位の表示切替が可能
+- **描画ツール** — ペン・消しゴム・塗りつぶし・スポイト
+- **レイヤー** — ベースレイヤーとオーバーレイレイヤーの切り替え編集
+- **コピー＆ペースト** — 面単位・パーツ単位のコピー＆貼り付け。左右反転・上下反転に対応
+- **いろのちょうせい** — あかるさ・コントラスト・あざやかさ・いろあい・ゆらぎの5パラメータで色を一括調整。レイヤー指定・undo/redo 対応
+- **もどる / すすむ** — 描画操作・色調整ともに undo/redo 対応
+- **PNG 書き出し** — 64×64 の標準スキンフォーマットで保存
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## スクリーンショット
 
-## Expanding the ESLint configuration
+> TODO: スクリーンショットを追加
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 技術スタック
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| カテゴリ | 技術 |
+|---|---|
+| フレームワーク | React 19 + TypeScript |
+| ビルドツール | Vite 8 |
+| 状態管理 | Zustand（スライスパターン） |
+| 3D レンダリング | Three.js + React Three Fiber + Drei |
+| スタイリング | CSS カスタムプロパティ（CSS Variables） |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## セットアップ
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# 依存パッケージのインストール
+npm install
+
+# 開発サーバーの起動
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+ブラウザで http://localhost:5173 を開くと使えます。
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# プロダクションビルド
+npm run build
 ```
+
+## プロジェクト構成
+
+```
+src/
+├── components/
+│   ├── canvas/          # 2D 面キャンバス・スキンキャンバス
+│   ├── common/          # コンテキストメニューなど共通UI
+│   ├── palette/         # カラーパレット
+│   ├── panels/          # サイドバーパネル群
+│   ├── preview3d/       # 3D プレビュー
+│   ├── selector/        # スキン選択画面
+│   └── toolbar/         # 描画ツールバー
+├── constants/           # 定数定義
+├── hooks/               # カスタムフック
+├── store/               # Zustand ストア（3スライス構成）
+├── types/               # 型定義
+└── utils/               # ユーティリティ（描画・色調整・PNG I/O）
+```
+
+## 対応モデルタイプ
+
+- **ワイド（Classic）** — Steve 系の4px幅の腕
+- **スリム（Slim）** — Alex 系の3px幅の腕
+
+PNG読み込み時にモデルタイプを自動判定します。
+
+## ライセンス
+
+MIT
