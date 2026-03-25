@@ -1,0 +1,97 @@
+/* ===== デザイントークン ===== */
+:root {
+  /* メインカラー（グリーン系） */
+  --color-primary: #349F87;
+  --color-primary-dark: #2A8570;
+  --color-primary-light: #DEF2EF;
+  --color-primary-pale: #EAF7F4;
+
+  /* アクセントカラー（オレンジ系） */
+  --color-accent: #EFA661;
+  --color-accent-dark: #D9913A;
+  --color-accent-light: #FFF3E5;
+
+  /* 背景 */
+  --color-bg: #F5F5EE;
+  --color-bg-panel: #FDFDFC;
+  --color-bg-canvas: #F0F0EA;
+  --color-bg-thumbnail: #d4e8e0;
+
+  /* チェッカーボード（透明表現用） */
+  --color-checker-light: #e0e0e0;
+  --color-checker-dark: #c0c0c0;
+
+  /* テキスト */
+  --color-text: #002A1D;
+  --color-text-sub: #7B8F85;
+  --color-text-light: #A0ADA6;
+  --color-text-on-primary: #FFFFFF;
+
+  /* ボーダー */
+  --color-border: #D6D6C8;
+  --color-border-light: #E6E6D3;
+
+  /* シャドウ（フラットデザインのため不使用） */
+  --shadow-sm: none;
+  --shadow-md: none;
+
+  /* 角丸 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* スペーシング */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+
+  /* フォント */
+  --font-family: 'Noto Sans JP', sans-serif;
+  --font-size-base: 12px;
+  --font-size-sm: 11px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+/* ===== フォーカススタイル ===== */
+/* ブラウザデフォルトの青枠を消し、プライマリカラーのボーダーに統一 */
+/* インラインスタイルの border を上書きするため !important を使用 */
+input:focus,
+button:focus-visible {
+  outline: none !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* ===== スクロールバー ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
