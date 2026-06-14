@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useEditorStore } from '../../store/editorStore';
@@ -7,7 +7,7 @@ import { loadPngAsData } from '../../utils/skinIO';
 import type { PartKey } from '../../constants/skinTemplate';
 import type { PartUV, PartRect, ModelType, SkinData } from '../../types';
 
-import { SCALE, OVERLAY_EXPAND } from '../../constants/preview3d';
+import { SCALE, OVERLAY_EXPAND, useSkinTexture } from '../../constants/preview3d';
 
 /** サンプルスキンの定義 */
 const SKIN_CHARACTERS = [
@@ -74,34 +74,17 @@ function getPartDefs(slim: boolean): PartDef[] {
 
 export function ThumbnailModel({ skinData, modelType }: { skinData: SkinData; modelType: ModelType }) {
   const isSlim = modelType === 'slim';
-  const texRef = useRef<THREE.DataTexture | null>(null);
 
-  if (!texRef.current) {
-    const tex = new THREE.DataTexture(
-      new Uint8Array(SKIN_WIDTH * SKIN_HEIGHT * 4),
-      SKIN_WIDTH, SKIN_HEIGHT, THREE.RGBAFormat,
-    );
-    tex.magFilter = THREE.NearestFilter;
-    tex.minFilter = THREE.NearestFilter;
-    tex.colorSpace = THREE.SRGBColorSpace;
-    texRef.current = tex;
-  }
-
-  useEffect(() => {
-    const tex = texRef.current!;
-    (tex.image.data as Uint8Array).set(skinData);
-    tex.needsUpdate = true;
-  }, [skinData]);
-
+  const texture = useSkinTexture(skinData);
   const parts = useMemo(() => getPartDefs(isSlim), [isSlim]);
 
   const baseMaterial = useMemo(
-    () => new THREE.MeshBasicMaterial({ map: texRef.current!, transparent: true, alphaTest: 0.1 }),
-    [],
+    () => new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.1 }),
+    [texture],
   );
   const overlayMaterial = useMemo(
-    () => new THREE.MeshBasicMaterial({ map: texRef.current!, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide }),
-    [],
+    () => new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide }),
+    [texture],
   );
 
   const geometries = useMemo(() => {

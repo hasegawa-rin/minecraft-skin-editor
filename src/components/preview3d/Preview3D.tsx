@@ -1,13 +1,13 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useEditorStore } from '../../store/editorStore';
 import { getPartUV, SKIN_WIDTH, SKIN_HEIGHT } from '../../constants/skinTemplate';
 import type { PartKey } from '../../constants/skinTemplate';
-import type { PartUV, PartRect } from '../../types';
+import type { PartUV, PartRect, SkinData } from '../../types';
 
-import { SCALE, OVERLAY_EXPAND } from '../../constants/preview3d';
+import { SCALE, OVERLAY_EXPAND, useSkinTexture } from '../../constants/preview3d';
 
 // ===== UV マッピング =====
 
@@ -105,37 +105,12 @@ function getPartDefs(slim: boolean): PartDef[] {
 
 // ===== テクスチャフック =====
 
-/** skinData を Three.js DataTexture として提供する（変更時に自動更新） */
-function useSkinTexture(): THREE.DataTexture {
+/** 表示中のスキンデータ（色調整中はプレビュー、通常時はskinData）を返す */
+function useDisplayData(): SkinData {
   const skinData = useEditorStore((s) => s.skinData);
   const isAdjusting = useEditorStore((s) => s.isAdjusting);
   const adjustPreviewData = useEditorStore((s) => s.adjustPreviewData);
-  const texRef = useRef<THREE.DataTexture | null>(null);
-
-  // 色調整中はプレビューデータを使用、通常時はskinData
-  const displayData = isAdjusting && adjustPreviewData ? adjustPreviewData : skinData;
-
-  if (!texRef.current) {
-    const tex = new THREE.DataTexture(
-      new Uint8Array(SKIN_WIDTH * SKIN_HEIGHT * 4),
-      SKIN_WIDTH,
-      SKIN_HEIGHT,
-      THREE.RGBAFormat,
-    );
-    tex.magFilter = THREE.NearestFilter;
-    tex.minFilter = THREE.NearestFilter;
-    tex.colorSpace = THREE.SRGBColorSpace; // sRGB で正しい色味にする
-    // flipY = false (デフォルト): データ先頭行 = V=0 = 画像上端
-    texRef.current = tex;
-  }
-
-  useEffect(() => {
-    const tex = texRef.current!;
-    (tex.image.data as Uint8Array).set(displayData);
-    tex.needsUpdate = true;
-  }, [displayData]);
-
-  return texRef.current;
+  return isAdjusting && adjustPreviewData ? adjustPreviewData : skinData;
 }
 
 // ===== 3D スキンモデル =====
@@ -144,7 +119,7 @@ function SkinModel() {
   const modelType = useEditorStore((s) => s.modelType);
   const previewLayerMode = useEditorStore((s) => s.previewLayerMode);
   const viewMode = useEditorStore((s) => s.viewMode);
-  const texture = useSkinTexture();
+  const texture = useSkinTexture(useDisplayData());
 
   const isSlim = modelType === 'slim';
   const showBase = previewLayerMode !== 'overlay';
@@ -266,7 +241,7 @@ export function Preview3D() {
         </Canvas>
       </div>
       <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-sub)', margin: 'var(--space-xs) 0 0', textAlign: 'center' }}>
-        マウスでまわせるよ　ホイールでズーム
+        マウスでまわせるよ ホイールでズーム
       </p>
     </div>
   );

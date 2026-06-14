@@ -132,8 +132,24 @@
 - **色調整リセット状態の共通化**: `ADJUST_RESET_STATE` 定数を作ってcancelAdjust/commitAdjustで spread することで重複排除
 - **applyAdjustToRects のインプレース化**: 以前は各rect処理のたびにUint8ClampedArrayを新規作成していた。コピーを1回だけ作ってインプレースで書き換える方式に変更し、GC負荷を軽減
 
+### react-hooks v7（lint）と Three.js の両立
+- react-hooks v7 は厳格な新ルールを持つ: `refs`（レンダー中にref.currentを読むな）、`immutability`（hookが返した値を書き換えるな）、`set-state-in-effect`（effect内で同期setStateするな）
+- これらは Three.js / react-three-fiber の「ミュータブルなGPUリソースをReact外で更新する」パターンと根本的に衝突する。useRef/useStateで保持して書き換える方式は全部lint違反になる
+- **解決策＝テクスチャは都度生成**: `useSkinTexture(data)` フックで、データが変わるたびに新しいDataTextureを `useMemo` で生成し、effectで旧テクスチャをdispose。書き換えがないのでrefもimmutabilityも違反しない。64×64と軽量なので毎回生成で問題なし（constants/preview3d.ts に集約）
+- **DOM測定→setStateはrefコールバックで**: ContextMenuの位置補正のように「要素のサイズを測って位置を決める」処理は、useLayoutEffect内setStateだと set-state-in-effect 違反。refコールバック（`ref={(el)=>{...}}`）内ならレンダー外なので違反にならない
+- **effectで導出state同期は避ける**: 「selectedCountが増えたらshowBalloonをfalseに」のような同期effectは、派生値（`!dismissed && noSelection`）で表現すればeffect不要
+- **抑制コメントやルールOFFは技術的負債**: ユーザー方針は「設計で正攻法に解決」。eslint-disableで逃げない
+
+### バンドル最適化
+- Three.jsは巨大（~900KB）。vite.config.ts の `manualChunks` で three / @react-three を 'three' チャンクに分離すると、メインJSが激減し（1134KB→235KB）、3Dライブラリは長期キャッシュ可能に
+- vite 8（rolldown）の manualChunks は**関数形式のみ**（オブジェクト形式は型エラー）。`manualChunks(id) { if (id.includes('node_modules/three')) return 'three' }`
+- threeチャンク自体は大きいままなので `chunkSizeWarningLimit: 1000` で警告抑制（隔離済みなので妥当）
+
 ### Cowork環境
 - ファイル削除には `mcp__cowork__allow_cowork_file_delete` ツールが必要（rm は Operation not permitted）
+- マウントされたユーザーフォルダで `.git` が壊れる場合がある（cloneのlockファイルが残存）。`/tmp` で正常cloneし `.git` を `cp -a` でコピーすれば履歴・origin付きで復旧できる
+- 編集はファイルツールでユーザーフォルダに直接、検証は `/tmp` 作業コピーに rsync 同期して lint/build、という運用が安定
+- Chrome実機確認は Cowork の Chrome ツールでできる（ユーザーが手元で `npm run dev` 起動 → localhost:5173 を開いて確認）
 
 ### 作業プロセス（ユーザーから学んだこと）
 - **判断を勝手にしない**: デザインや機能の方針は、実装前に必ずユーザーに確認する

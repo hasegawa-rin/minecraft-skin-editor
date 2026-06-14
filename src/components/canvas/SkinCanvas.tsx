@@ -248,14 +248,16 @@ export function UndoRedoControls() {
   const adjustHistoryIndex = useEditorStore((s) => s.adjustHistoryIndex);
   const adjustHistoryLength = useEditorStore((s) => s.adjustHistory.length);
 
-  const [tooltip, setTooltip] = useState<{ msg: string; target: 'undo' | 'redo' } | null>(null);
+  const [tooltip, setTooltip] = useState<{ msg: string; target: 'undo' | 'redo'; left: number } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const undoBtnRef = useRef<HTMLButtonElement>(null);
   const redoBtnRef = useRef<HTMLButtonElement>(null);
 
   const showTooltip = useCallback((msg: string, target: 'undo' | 'redo') => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    setTooltip({ msg, target });
+    // 吹き出しの左位置をターゲットボタンに合わせる（イベント起点なので ref 参照OK）
+    const left = target === 'redo' ? (redoBtnRef.current?.offsetLeft ?? 0) : 0;
+    setTooltip({ msg, target, left });
     timerRef.current = setTimeout(() => setTooltip(null), TOOLTIP_DURATION);
   }, []);
 
@@ -302,10 +304,7 @@ export function UndoRedoControls() {
     }
   };
 
-  // 吹き出しの左位置をターゲットボタンに合わせる
-  const tooltipLeft = tooltip
-    ? (tooltip.target === 'redo' ? (redoBtnRef.current?.offsetLeft ?? 0) : 0)
-    : 0;
+  const tooltipLeft = tooltip ? tooltip.left : 0;
 
   return (
     <div style={{ position: 'relative' }}>

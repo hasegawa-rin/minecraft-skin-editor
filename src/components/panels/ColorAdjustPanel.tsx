@@ -154,14 +154,13 @@ export function ColorAdjustPanel() {
   const noSelection = selectedCount === 0;
 
   // 吹き出しガイド: 面が未選択のとき表示、何か操作したら消える
-  const [showBalloon, setShowBalloon] = useState(true);
+  // dismissed = ユーザーが手動で消した／画面クリックした、の意。
+  // 面が選択されたら noSelection が false になり自動で非表示になる（state同期は不要）
+  const [dismissed, setDismissed] = useState(false);
   const rangeLabelRef = useRef<HTMLParagraphElement>(null);
   const [balloonPos, setBalloonPos] = useState<{ top: number; left: number } | null>(null);
 
-  // 面が選択されたら吹き出しを消す
-  useEffect(() => {
-    if (selectedCount > 0) setShowBalloon(false);
-  }, [selectedCount]);
+  const showBalloon = !dismissed && noSelection;
 
   // 吹き出し位置を計算
   useEffect(() => {
@@ -173,7 +172,7 @@ export function ColorAdjustPanel() {
   // 画面全体のクリック/ポインターダウンで吹き出しを消す
   useEffect(() => {
     if (!showBalloon) return;
-    const dismiss = () => setShowBalloon(false);
+    const dismiss = () => setDismissed(true);
     // 少し遅延させてマウント直後のイベントを無視
     const timer = setTimeout(() => {
       window.addEventListener('pointerdown', dismiss, { once: true });
@@ -191,7 +190,7 @@ export function ColorAdjustPanel() {
         <p ref={rangeLabelRef} className="panel-title" style={{ margin: '0 0 var(--space-xs)' }}>ちょうせいするはんい</p>
 
         {/* 吹き出しガイド（画面全体の上に表示） */}
-        {showBalloon && noSelection && balloonPos && (
+        {showBalloon && balloonPos && (
           <div
             className="adjust-balloon"
             style={{

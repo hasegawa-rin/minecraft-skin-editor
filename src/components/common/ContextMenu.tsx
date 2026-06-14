@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface MenuPos {
   x: number;
@@ -45,8 +45,7 @@ const VIEWPORT_MARGIN = 8;
  * - ヘッダー行対応（isHeader: true）
  */
 export function ContextMenu({ pos, items, dividerAfter = [], onClose }: ContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [adjusted, setAdjusted] = useState<{ x: number; y: number } | null>(null);
+  const [finalPos, setFinalPos] = useState(pos);
 
   // メニュー外クリックで閉じる
   useEffect(() => {
@@ -55,9 +54,9 @@ export function ContextMenu({ pos, items, dividerAfter = [], onClose }: ContextM
     return () => window.removeEventListener('mousedown', close);
   }, [onClose]);
 
-  // 描画後にビューポートに収まるか確認し、はみ出す場合は補正
-  useEffect(() => {
-    const el = menuRef.current;
+  // 要素がDOMに付いた瞬間（=レンダー外）にサイズを測り、ビューポートに収まる位置へ補正する。
+  // ref コールバックはレンダー中ではないので、ここでの setState はルール違反にならない。
+  const measureRef = useCallback((el: HTMLDivElement | null) => {
     if (!el) return;
     const rect = el.getBoundingClientRect();
     let x = pos.x;
@@ -75,16 +74,12 @@ export function ContextMenu({ pos, items, dividerAfter = [], onClose }: ContextM
     if (x < VIEWPORT_MARGIN) x = VIEWPORT_MARGIN;
     if (y < VIEWPORT_MARGIN) y = VIEWPORT_MARGIN;
 
-    if (x !== pos.x || y !== pos.y) {
-      setAdjusted({ x, y });
-    }
+    setFinalPos({ x, y });
   }, [pos]);
-
-  const finalPos = adjusted ?? pos;
 
   return (
     <div
-      ref={menuRef}
+      ref={measureRef}
       className="context-menu"
       style={{ left: finalPos.x, top: finalPos.y }}
       onMouseDown={(e) => e.stopPropagation()}

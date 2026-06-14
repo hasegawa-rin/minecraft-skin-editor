@@ -1,81 +1,58 @@
-# HANDOFF - 2026-03-17（セッション6）
+# HANDOFF - 2026-06-14（セッション7）
 
 ## 使用ツール
 Cowork（Claude デスクトップアプリ）
 
 ## 現在のタスクと進捗
 
-### 「いろのちょうせい」機能 — 実装完了・ドキュメント整理済み
+### lintエラー解消とバンドル最適化 — 完了
 
-色調整機能は全て実装済み。以下が最終的な仕様と実装:
+久しぶりの改修セッション。コード品質の健全化とビルド最適化を実施。
 
-#### 実装された機能
-- **5つのスライダー**: あかるさ(-100〜+100)、コントラスト(-100〜+100)、あざやかさ(-100〜+100)、いろあい(-180〜+180)、ゆらぎ(0〜100)
-- **ちょうせいするはんい**: パーツ単位のトグルボタン（ぜんたい/あたま/からだ/うで/あし）＋面単位クリック
-- **ちょうせいするレイヤー**: ぜんぶ/しただけ/うえだけ の3択（通常の「えをかくレイヤー」にはない「ぜんぶ」が追加）
-- **リアルタイムプレビュー**: 2Dキャンバスと3Dプレビューの両方にドラッグ中もリアルタイム反映
-- **スナップショットベースのundo/redo**: パラメータ＋シードのセットで履歴管理。面選択の変更は履歴に含めない
-- **ゆらぎパターン変更**: reshuffleSeeds で全面のシードを再生成、undo/redoに対応
-- **吹き出しガイド**: 初回表示時に「ちょうせいしたいぶぶんをえらんでね」を表示
-- **けってい/やめる**: けってい→skinDataにベイク＋通常undo履歴に追加、やめる→元に復元
+#### やったこと
+- **lintエラー14件 → 0件**（react-hooks v7 の新ルール対応）
+  - `react-hooks/refs`（レンダー中にref.currentを読むな）
+  - `react-hooks/immutability`（hookが返した値を書き換えるな）
+  - `react-hooks/set-state-in-effect`（effect内で同期的にsetStateするな）
+  - `no-irregular-whitespace`（全角スペース混入）
+- **バンドル最適化**: Three.jsを別チャンクに分離。メインJS 1134KB → 235KB（gzip 71KB）
 
-#### 仕様からの変更点（実装中に決定）
-- **調整パラメータのコピペ機能は削除**: 複雑さに対してユーザー価値が低いと判断し廃止
-- **右クリックメニューのヘッダー行は未実装**: コピペ廃止に伴い不要に
-- **パーツ選択方法を限定**: 左パネルのパーツボタン＋ラベルクリックの2方法のみ（カード背景クリックによる誤操作を防止）
-- **選択枠線を白3pxに変更**: 緑フィルターや緑枠線は色の印象に影響するため廃止
-- **スライダーは面未選択時disabled**: 操作不可を視覚的に明示
+#### 各ファイルの修正内容
+- **constants/preview3d.ts**: 共通フック `useSkinTexture(data)` を新設。スキンデータから毎回テクスチャを生成し、effectでdisposeする方式。「ミュータブルなテクスチャをレンダー外で書き換える」必要をなくし、refもimmutability違反も回避。`createSkinTexture(data)` はデータ込みで生成するよう変更
+- **preview3d/Preview3D.tsx**: ローカルの `useSkinTexture` を削除し、共通フックを使用。表示データ選択だけ `useDisplayData()` に切り出し。初回nullガード不要に
+- **selector/SkinSelector.tsx**: ThumbnailModel も共通フック `useSkinTexture` を使用。重複していたテクスチャ生成ロジックを排除
+- **common/ContextMenu.tsx**: 位置補正を `useLayoutEffect`+setState から **refコールバック方式**に変更。要素がDOMに付いた瞬間（レンダー外）に測定するため set-state-in-effect 違反にならない。`adjusted` state を `finalPos` state に統合
+- **panels/ColorAdjustPanel.tsx**: 吹き出しガイドを `showBalloon` state + 同期effect から、`dismissed` フラグ + 派生値 `showBalloon = !dismissed && noSelection` に変更。「面が選択されたら消す」effectを削除（noSelectionから自然に導出されるため不要）
+- **canvas/SkinCanvas.tsx**: 吹き出しの左位置を、レンダー中のref参照から `tooltip` state に `left` を持たせる方式に変更。位置計算は `showTooltip`（イベント起点）内で実施
+- **vite.config.ts**: `manualChunks` で three / @react-three を 'three' チャンクに分離。`chunkSizeWarningLimit: 1000` で警告抑制（threeチャンクは元々大きいため）
 
-### 今回のセッション（セッション6）で完了したこと
-- [x] 色調整機能の全実装（スライダー、面選択、プレビュー、undo/redo、けってい/やめる）
-- [x] スライダーのドラッグ中プレビュー（setAdjustParamsLive）とコミット分離
-- [x] 面未選択時のスライダー無効化
-- [x] パーツ選択をパーツボタン＋ラベルクリックに限定
-- [x] 調整パラメータのコピペ機能を削除
-- [x] 選択枠線を白3pxに変更、色フィルター廃止
-- [x] undo/redoを面選択変更では発火しないよう修正
-- [x] 3Dプレビューへのリアルタイム反映
-- [x] 「ちょうせいするレイヤー」機能の追加（ぜんぶ/しただけ/うえだけ）
-- [x] 中央キャンバスの表示をadjustTargetLayerに連動（「ぜんぶ」はbase+overlay合成）
-- [x] レイヤー切替時の面選択引き継ぎ
-- [x] 左パネルUIの整理（セクション順、スライダーサイズ、吹き出しガイド）
-- [x] ゆらぎパターン変更のundo/redo対応（シードを履歴に含める）
-- [x] ドキュメント更新（HANDOFF.md, MEMORY.md, KNOWLEDGE.md）
-- [x] リファクタリング全14件の実施:
-  - editorStore.ts を3スライスに分割（editorStore.ts + clipboardSlice.ts + adjustSlice.ts）
-  - ピクセルコピー/書き込みロジックの共通化（extractRect, writeRectWithFlip）
-  - 3D定数の一元管理（constants/preview3d.ts）
-  - Canvas色定数の一元管理（constants/colors.ts）
-  - CSS修正（gap:2px→4px, min-width単位追加）
-  - cancelAdjust/commitAdjustのリセット共通化（ADJUST_RESET_STATE）
-  - 不要コード・コメントの除去、applyAdjustToRectsのインプレース最適化
+#### 重要な設計判断
+- **抑制コメント（eslint-disable）もルールOFFも使わず、設計で正攻法に解決**した。「技術的負債にしない」というユーザー方針に従った
+- react-hooks v7 の refs/immutability ルールは、Three.js（react-three-fiber）の「ミュータブルなGPUリソースをReact外で更新する」パターンと根本的に相性が悪い。解決策は「テクスチャをデータから都度生成し、書き換えではなく作り直す」設計（64×64と軽量なので毎回生成で問題なし）
 
-### 前セッション（セッション5）で完了したこと
-- [x] フォーカススタイルの統一（index.css）
-- [x] コピーボタンツールチップの位置修正
-- [x] KNOWLEDGE.md追記
+#### 検証結果
+- `npm run lint` → 0エラー
+- `npm run build`（tsc型チェック含む）→ 成功、500KB超警告も解消
+- **Chrome実機確認（Cowork の Chrome ツール）でエラーゼロ・全機能パス**:
+  - サムネイル3D（全9キャラ描画OK）
+  - メイン3Dプレビュー（Steve描画 + 色調整リアルタイム反映OK）
+  - 右クリックメニュー（位置補正OK）
+  - 色調整パネル（吹き出しガイドの表示/消失OK、あかるさ+63で頭が明るくなり3Dにも反映）
+  - もどる/すすむ（有効化OK）
+- 残った警告は drei 由来の `THREE.Clock deprecated`（既存・無害）のみ
 
-### それ以前に完了していたこと
-- [x] コピー＆貼り付け機能（面単位・パーツ単位、反転対応）
-- [x] ContextMenu位置補正、パーツカードUI改善、中央エリア改善
-- [x] コードリファクタリング、モデルタイプ自動判定、スキン選択画面
-- [x] 2Dキャンバス面分割表示、3Dプレビュー、PNG入出力
-- [x] フラットデザイン化、カラーパレット刷新、もどる/すすむ
-
-## プロジェクトの現在の状態
-- **動作する状態**: `npm run dev` で開発サーバー起動可能（http://localhost:5173）
-- **コード品質**: 全機能実装済み、リファクタリング改善点の洗い出し完了
-- **主要機能**: スキン選択、2D面分割編集、3Dプレビュー、PNG入出力、モデルタイプ自動判定、面/パーツ単位のコピー＆貼り付け（反転対応）、色調整（5パラメータ、レイヤー選択、リアルタイムプレビュー、undo/redo）
+### 作業環境メモ（重要）
+- このフォルダ（Coworkでマウントされたユーザーフォルダ）は、当初 `.git` が壊れていた（cloneのlockファイルが残存しgit操作不能）。`/tmp` で正常cloneしたものから `.git` をコピーして復旧した
+- 編集はファイルツールでこのフォルダに直接行い、検証は `/tmp/mse` に rsync 同期して lint/build を実行する運用だった
 
 ## 次のセッションで最初にやること
 1. このHANDOFF.mdとMEMORY.mdを読み込む
-2. リファクタリング改善ポイント一覧を確認（このセッション末に報告済み）
-3. ユーザーと優先度を相談してリファクタリングに着手
+2. push済みか確認（このセッションではユーザーが手元ターミナルでcommit/pushする想定）
+3. `.spec/TODO.md` の未着手項目（プリセットカラーパレット、キーボードショートカット Ctrl+Z、モデル選択UI、新規スキン作成UI）から次の改修を相談
 
 ## 注意点・未解決の問題
 - editorStoreの通常redo実装は `history[historyIndex + 2]` を参照する特殊な構造。canRedoの判定は必ず `historyIndex < historyLength - 2` とすること
 - 色調整のundo/redoはスナップショットベースで通常モードと異なる設計（adjustHistory[0]=初期状態、index>0でundo可能）
-- ファイル削除には `mcp__cowork__allow_cowork_file_delete` ツールが必要
-- Preview3D.tsx と SkinSelector.tsx で SCALE = 1/16 と OVERLAY_EXPAND = 0.5 が2箇所で定義されている（統一候補）
-- **重要な作業プロセスルール**: ユーザーから「判断を勝手にせず、方針を確認してから進めてね」との指示あり
+- **重要な作業プロセスルール**: ユーザーから「判断を勝手にせず、方針を確認してから進めてね」「技術的負債にしない」との指示あり
 - **デザイン教訓**: 装飾を足すとダサくなりやすい。引き算のデザインが重要
+- react-hooks v7 のルール下では、Three.jsオブジェクトを useRef/useState で「保持して書き換える」設計はlint違反になる。テクスチャは都度生成方式を維持すること
