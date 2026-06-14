@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // GitHub Pages はリポジトリ名のサブパス配下で配信されるため、
+  // アセットの参照先をそのサブパスに合わせる（これがないと白紙になる）。
+  // 例: https://hasegawa-rin.github.io/minecraft-skin-editor/
+  base: '/minecraft-skin-editor/',
   plugins: [react()],
   build: {
     // Three.js を独立チャンクに隔離済み（下記 manualChunks）。
